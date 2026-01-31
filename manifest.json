@@ -1,6 +1,6 @@
 {
-  "name": "Rannaghar Food Delivery",
-  "short_name": "Rannaghar",
+  "name": "রান্নাঘর Authentic-foods",
+  "short_name": "রান্নাঘর",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#121212",
