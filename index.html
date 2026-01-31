@@ -5,11 +5,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dynamic User Panel</title>
+    <title>রান্নাঘর food-delivery </title>
     
     <!-- PWA Settings -->
     <link rel="manifest" href="./manifest.json">
-    <meta name="theme-color" content="#ec4899">
+    <meta name="theme-color" content="#ffffff">
     <link rel="apple-touch-icon" href="./icon-192.png">
     
     <script src="https://cdn.tailwindcss.com"></script>
@@ -64,6 +64,18 @@
         .lang-switch.active { background: rgba(59, 130, 246, 0.3); }
         .lang-switch.active .lang-knob { left: 22px; background: #2563eb; }
         .lang-text { font-size: 9px; color: #3b82f6; margin-top: 2px; font-weight: 600; opacity: 0.8; letter-spacing: 0.5px; }
+        
+        /* Error Animation for Address */
+        .input-error {
+            border-color: #ef4444 !important;
+            background-color: rgba(239, 68, 68, 0.1) !important;
+            animation: shake 0.3s ease-in-out;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col selection:bg-pink-500 selection:text-white">
@@ -208,13 +220,17 @@
         </div>
     </div>
 
+    <!-- MODIFIED ADDRESS MODAL: White Header -->
     <div id="addressModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
         <div class="glass-card w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl animate-fade-up">
-            <div class="bg-gradient-to-r from-pink-600 to-pink-500 p-6 text-white text-center"><h3 id="lbl_checkout_title" class="text-xl font-bold font-serif">Checkout</h3></div>
+            <!-- UPDATED: Background White, Text Black -->
+            <div class="bg-white p-6 text-gray-900 text-center border-b border-gray-100">
+                <h3 id="lbl_checkout_title" class="text-xl font-bold font-serif">Checkout</h3>
+            </div>
+            
             <div class="p-6 space-y-4 bg-dark-800">
                 <input type="text" id="orderName" class="w-full bg-dark-900 border border-white/10 rounded-xl p-3 text-white focus:border-pink-500 outline-none" placeholder="Your Name" />
                 
-                <!-- VALIDATED MOBILE INPUT -->
                 <input type="tel" id="orderMobile" maxlength="11" oninput="this.value = this.value.replace(/[^0-9]/g, '')" class="w-full bg-dark-900 border border-white/10 rounded-xl p-3 text-white focus:border-pink-500 outline-none" placeholder="017XXXXXXXX" />
                 
                 <div class="flex items-center space-x-4 bg-dark-900 p-2 rounded-xl w-max">
@@ -222,7 +238,7 @@
                     <div id="qtyValue" class="text-xl font-bold text-brand-green w-8 text-center">1</div>
                     <button id="qtyPlus" class="w-10 h-10 bg-pink-600 text-white btn-green-border rounded-lg">+</button>
                 </div>
-                <textarea id="orderAddress" class="w-full bg-dark-900 border border-white/10 rounded-xl p-3 h-24 text-white resize-none" placeholder="Full Address..."></textarea>
+                <textarea id="orderAddress" class="w-full bg-dark-900 border border-white/10 rounded-xl p-3 h-24 text-white resize-none transition-colors" placeholder="Full Address..."></textarea>
                 
                 <!-- LOCATION INDICATOR -->
                 <div class="bg-dark-900 rounded-xl p-3 border border-white/10 flex items-center justify-between">
@@ -547,16 +563,21 @@
         document.getElementById('btnOrderCall').onclick = () => window.location.href = `tel:${settings.contactPhone}`;
 
         function openAddressModal() {
-            document.getElementById('orderName').value = ''; document.getElementById('orderMobile').value = ''; document.getElementById('orderAddress').value = '';
-            orderQuantity = 1; document.getElementById('qtyValue').textContent = 1; document.getElementById('addressModal').classList.remove('hidden');
+            document.getElementById('orderName').value = ''; document.getElementById('orderMobile').value = ''; 
             
-            // Ensure UI is up to date with current location status
-            if(locationUrl && locText.textContent.includes("Location Found") || locText.textContent.includes("লোকেশন পাওয়া")) {
-                 // already handled by global state
-            } else {
-                 // If location was not found previously but maybe found now, ensure UI updates
-            }
+            // Clear address and any previous error states
+            const addrInput = document.getElementById('orderAddress');
+            addrInput.value = '';
+            addrInput.classList.remove('input-error');
+            
+            orderQuantity = 1; document.getElementById('qtyValue').textContent = 1; document.getElementById('addressModal').classList.remove('hidden');
         }
+        
+        // Remove error class on typing
+        document.getElementById('orderAddress').addEventListener('input', function() {
+            this.classList.remove('input-error');
+        });
+
         document.getElementById('qtyMinus').onclick = () => { if(orderQuantity > 1) document.getElementById('qtyValue').textContent = --orderQuantity; };
         document.getElementById('qtyPlus').onclick = () => { if(orderQuantity < selectedProduct.stock) document.getElementById('qtyValue').textContent = ++orderQuantity; };
 
@@ -564,17 +585,26 @@
         document.getElementById('submitOrder').onclick = async () => {
             const name = document.getElementById('orderName').value.trim();
             const mobile = document.getElementById('orderMobile').value.trim();
-            const address = document.getElementById('orderAddress').value.trim();
+            const addressInput = document.getElementById('orderAddress');
+            const address = addressInput.value.trim();
             
             if(!name) { alert("Please enter your name."); return; }
             if(mobile.length !== 11 || !mobile.startsWith("01")) { alert("Please enter a valid 11-digit BD mobile number (01...)."); return; }
             
-            // --- UPDATED ADDRESS VALIDATION (Minimum 2 Words) ---
+            // --- UPDATED ADDRESS VALIDATION (Minimum 2 Words, Red + Vibrate) ---
             const addressWordCount = address.split(/\s+/).filter(word => word.length > 0).length;
             
             if(!address || addressWordCount < 2) { 
-                alert("Please enter a detailed address (At least 2 words required).\nঠিকানায় কমপক্ষে ২টি শব্দ লিখুন।"); 
-                return; 
+                // Visual Error: Red Border + Shake
+                addressInput.classList.add('input-error');
+                addressInput.focus();
+                
+                // Haptic Feedback: Vibrate 200ms (works on mobile)
+                if (navigator.vibrate) {
+                    navigator.vibrate(200);
+                }
+                
+                return; // Stop execution, NO POPUP
             }
             // ----------------------------------------------------
 
